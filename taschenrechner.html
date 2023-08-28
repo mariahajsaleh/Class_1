@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+ 
+    <title>Taschenrechner</title>
+    <style>
+      .rechner .anzeige {
+  background-color: aliceblue;
+  box-shadow: inset 0px 0px 4px gray;
+  border: 1px navy;
+  border-bottom: none;
+  text-align: right;
+  line-height: 140%;
+  padding: 6px;
+  width: 220px;
+}
+
+.rechner button {
+  margin: 1px;
+}
+
+.rechner .ziffer {
+  box-shadow: inset 0px 1px 0px 0px #54a3f7;
+  background: linear-gradient(to bottom, #007dc1 5%, #0061a7 100%);
+  background-color: #007dc1;
+  border-radius: 3px;
+  border: 1px solid #124d77;
+  display: inline-block;
+  cursor: pointer;
+  color: #ffffff;
+  font-family: Arial;
+  font-size: 13px;
+  padding: 6px 24px;
+  text-decoration: none;
+  text-shadow: 0px 1px 0px #154682;
+}
+
+.rechner .ziffer:hover {
+  background: linear-gradient(to bottom, #0061a7 5%, #007dc1 100%);
+  background-color: #0061a7;
+}
+
+.rechner .ziffer:active {
+  position: relative;
+  top: 1px;
+}
+
+.rechner .reweg {
+  box-shadow: inset 0px 0px 14px -3px #f2fadc;
+  background: linear-gradient(to bottom, #dbe6c4 5%, #9ba892 100%);
+  background-color: #dbe6c4;
+  border-radius: 6px;
+  border: 1px solid #b2b8ad;
+  display: inline-block;
+  cursor: pointer;
+  color: #757d6f;
+  font-family: Arial;
+  font-size: 15px;
+  font-weight: bold;
+  padding: 6px 24px;
+  text-decoration: none;
+  text-shadow: 0px 1px 0px #ced9bf;
+}
+.rechner .reweg:hover {
+  background: linear-gradient(to bottom, #9ba892 5%, #dbe6c4 100%);
+  background-color: #9ba892;
+}
+.rechner .reweg:active {
+  position: relative;
+  top: 1px;
+}
+
+.rechner .resultat {
+  box-shadow: inset 0px 1px 0px 0px #fff6af;
+  background: linear-gradient(to bottom, #ffec64 5%, #ffab23 100%);
+  background-color: #ffec64;
+  border-radius: 6px;
+  border: 1px solid #ffaa22;
+  display: inline-block;
+  cursor: pointer;
+  color: #333333;
+  font-family: Arial;
+  font-size: 15px;
+  font-weight: bold;
+  padding: 6px 24px;
+  text-decoration: none;
+  text-shadow: 0px 1px 0px #ffee66;
+}
+.rechner .resultat:hover {
+  background: linear-gradient(to bottom, #ffab23 5%, #ffec64 100%);
+  background-color: #ffab23;
+}
+.rechner .resultat:active {
+  position: relative;
+  top: 1px;
+}
+
+.rechner .neu {
+  box-shadow: inset 0px 1px 0px 0px #f5978e;
+  background: linear-gradient(to bottom, #f24537 5%, #c62d1f 100%);
+  background-color: #f24537;
+  border-radius: 6px;
+  border: 1px solid #d02718;
+  display: inline-block;
+  cursor: pointer;
+  color: #ffffff;
+  font-family: Arial;
+  font-size: 15px;
+  font-weight: bold;
+  padding: 6px;
+  width: 232px;
+  text-decoration: none;
+  text-shadow: 0px 1px 0px #810e05;
+}
+.rechner .neu:hover {
+  background: linear-gradient(to bottom, #c62d1f 5%, #f24537 100%);
+  background-color: #c62d1f;
+}
+
+.rechner .neu:active {
+  position: relative;
+  top: 1px;
+}
+    </style>
+  </head>
+  <body id="inhalt"></body>
+</html>
+<script>
+ // ------------------------------------------------------ //
+// Erstellt HTML-Block Elemente
+// ------------------------------------------------------ //
+
+const block = (tag, wert, attr) => {
+  let s = `<${tag}`;
+  // *** //
+  if (attr !== undefined && attr.length > 0) {
+    for (let a of attr) s += ` ${a.name} = "${a.wert}" `;
+  }
+  // *** //
+  s += `>`;
+  // *** //
+  s += wert;
+  // *** //
+  s += `</${tag}>`;
+  // *** //
+  return s;
+};
+
+// ------------------------------------------------------ //
+// Erstellt HTML-Single Elemente
+// ------------------------------------------------------ //
+
+const single = (tag, attr) => {
+  let s = `<${tag}`;
+  // *** //
+  if (attr !== undefined && attr.length > 0) {
+    for (let a of attr) s += ` ${a.name} = "${a.wert}" `;
+  }
+  // *** //
+  s += `>`;
+  // *** //
+  return s;
+};
+
+// ------------------------------------------------------ //
+// Verkürzt den Zugriff auf ein HTML-Element per ID
+// ------------------------------------------------------ //
+
+const el = (id) => document.getElementById(id);
+
+// ------------------------------------------------------ //
+// Zählervariable für IDs
+// ------------------------------------------------------ //
+
+let __rechner = 0;
+
+// ------------------------------------------------------ //
+// Taschenrechner-Klasse
+// ------------------------------------------------------ //
+
+class rechner {
+  // ---------------------------------------------------- //
+  // Einstellungen
+  // ---------------------------------------------------- //
+  constructor(ziel) {
+    // Verbindung zum Ziel-HTML-Element
+    this._ziel = document.getElementById(ziel);
+    // Interne Daten zum Realisieren des Rechenvorgangs
+    this._daten = {
+      zahl1: { text: "", wert: 0.0 },
+      zahl2: { text: "", wert: 0.0 },
+      ergeb: { text: "", wert: 0.0 },
+      reweg: "",
+      idliste: {
+        anzeige: `anzeige-${__rechner}`,
+        resultat: `resultat-${__rechner}`,
+        neu: `neu-${__rechner}`,
+        reweg: [
+          {
+            id: `reweg-a-${__rechner}`,
+            op: "+"
+          },
+          {
+            id: `reweg-s-${__rechner}`,
+            op: "-"
+          },
+          {
+            id: `reweg-m-${__rechner}`,
+            op: "*"
+          },
+          {
+            id: `reweg-d-${__rechner}`,
+            op: ":"
+          }
+        ],
+        ziffer: [
+          {
+            id: `ziffer-7-${__rechner}`,
+            nr: 7
+          },
+          {
+            id: `ziffer-8-${__rechner}`,
+            nr: 8
+          },
+          {
+            id: `ziffer-9-${__rechner}`,
+            nr: 9
+          },
+          {
+            id: `ziffer-4-${__rechner}`,
+            nr: 4
+          },
+          {
+            id: `ziffer-5-${__rechner}`,
+            nr: 5
+          },
+          {
+            id: `ziffer-6-${__rechner}`,
+            nr: 6
+          },
+          {
+            id: `ziffer-1-${__rechner}`,
+            nr: 1
+          },
+          {
+            id: `ziffer-2-${__rechner}`,
+            nr: 2
+          },
+          {
+            id: `ziffer-3-${__rechner}`,
+            nr: 3
+          },
+          {
+            id: `ziffer-0-${__rechner}`,
+            nr: 0
+          },
+          {
+            id: `komma-${__rechner}`,
+            nr: ","
+          }
+        ]
+      }
+    };
+    // Die HTML-Elemente, die den Rechner erzeugen
+    this._ziel.innerHTML += block(
+      "div",
+      single("input", [
+        { name: "class", wert: "anzeige" },
+        { name: "id", wert: `anzeige-${__rechner}` }
+      ]) +
+        single("br") +
+        block("button", "7", [
+          { name: "class", wert: "ziffer" },
+          { name: "id", wert: `ziffer-7-${__rechner}` }
+        ]) +
+        block("button", "8", [
+          { name: "class", wert: "ziffer" },
+          { name: "id", wert: `ziffer-8-${__rechner}` }
+        ]) +
+        block("button", "9", [
+          { name: "class", wert: "ziffer" },
+          { name: "id", wert: `ziffer-9-${__rechner}` }
+        ]) +
+        block("button", ":", [
+          { name: "class", wert: "reweg" },
+          { name: "id", wert: `reweg-d-${__rechner}` }
+        ]) +
+        single("br") +
+        block("button", "4", [
+          { name: "class", wert: "ziffer" },
+          { name: "id", wert: `ziffer-4-${__rechner}` }
+        ]) +
+        block("button", "5", [
+          { name: "class", wert: "ziffer" },
+          { name: "id", wert: `ziffer-5-${__rechner}` }
+        ]) +
+        block("button", "6", [
+          { name: "class", wert: "ziffer" },
+          { name: "id", wert: `ziffer-6-${__rechner}` }
+        ]) +
+        block("button", "*", [
+          { name: "class", wert: "reweg" },
+          { name: "id", wert: `reweg-m-${__rechner}` }
+        ]) +
+        single("br") +
+        block("button", "1", [
+          { name: "class", wert: "ziffer" },
+          { name: "id", wert: `ziffer-1-${__rechner}` }
+        ]) +
+        block("button", "2", [
+          { name: "class", wert: "ziffer" },
+          { name: "id", wert: `ziffer-2-${__rechner}` }
+        ]) +
+        block("button", "3", [
+          { name: "class", wert: "ziffer" },
+          { name: "id", wert: `ziffer-3-${__rechner}` }
+        ]) +
+        block("button", "-", [
+          { name: "class", wert: "reweg" },
+          { name: "id", wert: `reweg-s-${__rechner}` }
+        ]) +
+        single("br") +
+        block("button", "0", [
+          { name: "class", wert: "ziffer" },
+          { name: "id", wert: `ziffer-0-${__rechner}` }
+        ]) +
+        block("button", ",", [
+          { name: "class", wert: "ziffer" },
+          { name: "id", wert: `komma-${__rechner}` }
+        ]) +
+        block("button", "=", [
+          { name: "class", wert: "resultat" },
+          { name: "id", wert: `resultat-${__rechner}` }
+        ]) +
+        block("button", "+", [
+          { name: "class", wert: "reweg" },
+          { name: "id", wert: `reweg-a-${__rechner}` }
+        ]) +
+        single("br") +
+        block("button", "NEU", [
+          { name: "class", wert: "neu" },
+          { name: "id", wert: `neu-${__rechner}` }
+        ]),
+      [{ name: "class", wert: "rechner" }]
+    );
+    // Die Zählervariable für den nächsten Taschenrechner erhöhen
+    __rechner++;
+  }
+  // ---------------------------------------------------- //
+  // Diese Methode verbindet zu allen Buttons, passende
+  // Callback-Funktionen, damit der Taschenrechner auf
+  // Klicks reagiert!
+  // ---------------------------------------------------- //
+  fertig() {
+    // Alle Buttons benötigen zugriff auf die internen Daten
+    const d = this._daten;
+    // Diese Methode braucht Zugriff auf die einzelnen Buttons
+    const i = this._daten.idliste;
+    // ------------------------------------------------- //
+    // Der Button "Neu" löscht die sichtbare Anzeige
+    // und schreibt dort 0 hin. Intern werden zahl1,
+    // zahl2 und ergeb wieder auf 0 gestellt.
+    // ------------------------------------------------- //
+    el(i.neu).onclick = () => {
+      // Die Anzeige wird auf 0 umgestellt
+      el(i.anzeige).value = "0";
+      // Interne Daten die fürs Rechnen relevant sind
+      // werden wieder leer gemacht
+      d.reweg = "";
+      d.zahl1.text = "";
+      d.zahl1.wert = 0.0;
+      d.zahl2.text = "";
+      d.zahl2.wert = 0.0;
+      d.ergeb.text = "";
+      d.ergeb.wert = 0.0;
+    };
+    // ------------------------------------------------- //
+    // Der Buttons für +, -, * und : haben die Aufgabe,
+    // die aktuelle ausgewählte Rechenmethode zu notieren!
+    // ------------------------------------------------- //
+    for (let btn of i.reweg) {
+      el(btn.id).onclick = () => {
+        // Der Rechenweg (+, -, *, :) wird ausgewählt
+        d.reweg = btn.op;
+        // zahl1 und der Operator werden gemeinsam angezeigt
+        el(i.anzeige).value = d.zahl1.text + " " + d.reweg;
+      };
+    }
+    // ------------------------------------------------- //
+    // Der Buttons für Komma, 0, 1, 2, 3, 4, 5, 6, 7 , 8
+    // und 9 setzen erst einmal nur Text zusammen. Dabei
+    // entscheidet der Rechenweg (reweg), ob wir zahl1
+    // oder zahl2 zusammensetzen. Wenn kein Rechenweg
+    // angegeben ist, wird zahl1 zusammengesetzt. Wurde
+    // ein Rechenweg bestimmt, dann wird zahl2
+    // zusammengesetzt.
+    // ------------------------------------------------- //
+    for (let btn of i.ziffer) {
+      el(btn.id).onclick = () => {
+        // Der Rechenweg entscheidet, welche Zahl
+        // zusammengesetzt wird...
+        switch (d.reweg) {
+          case "+":
+          case "-":
+          case "*":
+          case ":":
+            // Wenn wir einen Rechenweg festgelegt haben,
+            // dann ist zahl1 schon fertig und es wird
+            // ein zahl2 zusammengesetzt.
+            d.zahl2.text += btn.nr; // Der neue Ziffer wird am Ende dazu gehangen
+            d.zahl2.wert = parseFloat(d.zahl2.text); // und daraus eine echte Zahl erzeugt
+            // zahl1 OPERATOR zahl2 werden angezeigt
+            el(i.anzeige).value =
+              d.zahl1.text + " " + d.reweg + " " + d.zahl2.text;
+            // *** //
+            break;
+          default:
+            // Wenn noch kein Rechenweg bestimmt ist,
+            // dann wird die zahl1 zusammengesetzt
+            d.zahl1.text += btn.nr; // Der neue Ziffer wird am Ende dazu gehangen
+            d.zahl1.wert = parseFloat(d.zahl1.text); // und daraus eine echte Zahl erzeugt
+            // Da nur zahl1 getippt wird, wird auch
+            // nur zahl1 angezeigt
+            el(i.anzeige).value = d.zahl1.text;
+            // *** //
+            break;
+        }
+      };
+    }
+    // ------------------------------------------------- //
+    // Der Button "=" rechnen nun das Ergebnis aus und
+    // gibt die zahl1, den Rechenweg und die zahl2 sowie
+    // das Ergebnis aus.
+    // ------------------------------------------------- //
+    el(i.resultat).onclick = () => {
+      // Abgängig vom Rechenweg wird berechnet...
+      switch (d.reweg) {
+        case "+":
+          d.ergeb.wert = d.zahl1.wert + d.zahl2.wert;
+          break;
+        case "-":
+          d.ergeb.wert = d.zahl1.wert - d.zahl2.wert;
+          break;
+        case "*":
+          d.ergeb.wert = d.zahl1.wert * d.zahl2.wert;
+          break;
+        case ":":
+          d.ergeb.wert = d.zahl1.wert / d.zahl2.wert;
+          break;
+        default:
+          break;
+      }
+      // Das Eregbnis wird als Text zusammengesetzt
+      d.ergeb.text =
+        d.zahl1.text +
+        " " +
+        d.reweg +
+        " " +
+        d.zahl2.text +
+        " = " +
+        d.ergeb.wert;
+      // Und in der Anzeige ausgegeben
+      el(i.anzeige).value = d.ergeb.text;
+      // zahl1 erhält den Wert vom Ergebnis, damit
+      // man direkt damit eine weitere Berechnung
+      // durchführen kann.
+      d.zahl1.wert = d.ergeb.wert;
+      d.zahl1.text = d.zahl1.wert.toString();
+      // Der Rechenweg wird wieder leer gemacht,
+      // damit eine neue zahl2 zusammengesetzt
+      // werden kann
+      d.reweg = "";
+      // Der zahl2 wird leer gemacht, damit beim
+      // Zusammensetzen von zahl2, die vorherigen
+      // Ziffern nicht stören bzw. den Wert
+      // fälschen
+      d.zahl2.wert = 0.0;
+      d.zahl2.text = "";
+      // Das Ergebnis wird leer gemacht, weil wir
+      // später ein neues Ergebnis brauchen
+      d.ergeb.text = "";
+      d.ergeb.wert = 0.0;
+    };
+  }
+  // ---------------------------------------------------- //
+  // Setter für Standardanzeige
+  // ---------------------------------------------------- //
+  set anzeige(wert) {
+    if (typeof wert === "string" || typeof wert === "number") {
+      this._daten.ergeb.text = wert;
+      this._daten.ergeb.wert = parseFloat(this._daten.ergeb.text);
+    } else {
+      this._daten.ergeb.text = "FALSCHER TYP!";
+      this._daten.ergeb.wert = 0.0;
+    }
+  }
+  // ---------------------------------------------------- //
+  // Setter für Zahl1
+  // ---------------------------------------------------- //
+  set zahl1(wert) {
+    if (typeof wert === "number") {
+      this._daten.zahl1.text = wert;
+      this._daten.zahl1.wert = parseFloat(this._daten.zahl1.text);
+    } else {
+      this._daten.zahl1.text = "0";
+      this._daten.zahl1.wert = 0.0;
+    }
+  }
+  // ---------------------------------------------------- //
+  // Getter für Zahl1
+  // ---------------------------------------------------- //
+  get zahl1() {
+    return this._daten.zahl1.wert;
+  }
+  // ---------------------------------------------------- //
+  // Setter für Zahl2
+  // ---------------------------------------------------- //
+  set zahl2(wert) {
+    if (typeof wert === "number") {
+      this._daten.zahl2.text = wert;
+      this._daten.zahl2.wert = parseFloat(this._daten.zahl2.text);
+    } else {
+      this._daten.zahl2.text = "0";
+      this._daten.zahl2.wert = 0.0;
+    }
+  }
+  // ---------------------------------------------------- //
+  // Getter für Zahl2
+  // ---------------------------------------------------- //
+  get zahl2() {
+    return this._daten.zahl2.wert;
+  }
+  // ---------------------------------------------------- //
+  // Setter für Rechenweg
+  // ---------------------------------------------------- //
+  set methode(wert) {
+    if (typeof wert === "string") {
+      switch (wert) {
+        case "+":
+        case "-":
+        case "*":
+          this._daten.reweg = wert;
+          break;
+        case ":":
+        case "/":
+          this._daten.reweg = ":";
+          break;
+        default:
+          console.log("Unterstützte Rechenmethoden sind: + - * : /");
+          break;
+      }
+    }
+  }
+  // ---------------------------------------------------- //
+  // Getter für Rechenweg
+  // ---------------------------------------------------- //
+  get methode() {
+    return this._daten.reweg;
+  }
+}
+const r = new rechner("inhalt");
+r.fertig();
+
+</script>
